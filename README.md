@@ -29,7 +29,7 @@ the command grugen is at your disposal.
 ## Usage example
 Given is the billing data of one year which is sorted by customer.
 
-Create a Grugen file (e.g. `custtotal.grugen`) containing:
+Create a Grugen file (e.g. `custtotal.grugen`) containing `.gru-` statements:
 ```
 .gru-year
 .gru-customer, string
@@ -57,7 +57,7 @@ and the following locations within a get function:
 - `state`     - here we could ignore an input line with 'goto readagain'
 - `get`       - here we need to extract information out of variable `line` and feed the variables `customerKey` and `billKey`
 
-Provide code for these locations using `.sl=` statements
+Now provide code for these locations using `.sl=` statements
 ('sl' for 'select location'):
 ```
 .sl=o_year
@@ -80,7 +80,7 @@ Provide code for these locations using `.sl=` statements
 	billKey.date = ...
 	billKey.sum = ...
 ```
-This will generate a file `gru_custtotal_generated.go` with
+Running `grugen` on this Grugen file will generate a file `gru_custtotal_generated.go` with
 the necessary Go code for printing lines to the `bufio.Writer`. Lines
 will consist of customer, `:`, and the total of all the associated bills.
 

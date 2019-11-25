@@ -47,7 +47,6 @@ with name `customer`. `year` will be the name of the file level,
 `bill` the name of the record level.
 After these `.gru` statements Grugen will know about the following
 locations within the function `conbreak`:
-- `global`	- for global declarations
 - `o_year`	- for "open" processing of the file
 - `c_year`	- for "close" processing of the file
 - `o_customer`	- for "open" processing of a customer
@@ -57,6 +56,8 @@ locations within the function `conbreak`:
 and the following locations within a get function: 
 - `state`	- here we could ignore an input line with 'goto readagain'
 - `get`		- here we need to extract information out of variable `line` and feed the variables `customerKey` and `billKey`
+
+(The location `global` is meant for global declarations.)
 
 Now provide code for these locations using `.sl=` statements
 ('sl' for 'select location'):

@@ -57,7 +57,7 @@ type gruT struct {
 // Conbreak contains the control break logic and includes the code snippets
 // that the programmer provided for the following locations.
 //   o/c_<file level name>
-//   o/c_<file level name>
+//   o/c_<group level name>
 //   p_<record level name>
 // If the input data is not properly sorted conbreak stops working and 
 // returns an error value.

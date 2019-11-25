@@ -47,15 +47,16 @@ with name `customer`. `year` will be the name of the file level,
 `bill` the name of the record level.
 After these `.gru` statements Grugen will know about the following
 locations within the function `conbreak`:
-- `o_year`    - for "open" processing of the file
-- `c_year`    - for "close" processing of the file
-- `o_customer`- for "open" processing of a customer
-- `c_customer`- for "close" processing of a customer
-- `p_bill`    - for processing of a single record
+- `global`	- for global declarations
+- `o_year`	- for "open" processing of the file
+- `c_year`	- for "close" processing of the file
+- `o_customer`	- for "open" processing of a customer
+- `c_customer`	- for "close" processing of a customer
+- `p_bill`	- for processing of a single record
 
 and the following locations within a get function: 
-- `state`     - here we could ignore an input line with 'goto readagain'
-- `get`       - here we need to extract information out of variable `line` and feed the variables `customerKey` and `billKey`
+- `state`	- here we could ignore an input line with 'goto readagain'
+- `get`		- here we need to extract information out of variable `line` and feed the variables `customerKey` and `billKey`
 
 Now provide code for these locations using `.sl=` statements
 ('sl' for 'select location'):
@@ -83,8 +84,6 @@ Now provide code for these locations using `.sl=` statements
 Running `grugen` on this Grugen file will generate a file `gru_custtotal_generated.go` with
 the necessary Go code for printing lines to the `bufio.Writer`. Lines
 will consist of customer, `:`, and the total of all the associated bills.
-
-To use the generated code in your project call the function `conbreak`.
 
 
 ## More information

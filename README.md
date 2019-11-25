@@ -29,7 +29,7 @@ the command grugen is at your disposal.
 ## Usage example
 Given is the billing data of one year which is sorted by customer.
 
-Create a Grugen file (e.g. `custtotal.grugen`) containing among other things:
+Create a Grugen file (e.g. `custtotal.grugen`) containing:
 ```
 .gru-year
 .gru-customer, string
@@ -88,8 +88,8 @@ To use the generated code in your project call the function `conbreak`.
 
 
 ## More information
-- Specifications for the content of the Grugen file: `doc/grugen_spec.html`
-- Examples are available in subdirectories of `example/`
+- Specifications for the content of the Grugen file: `doc/grugen_spec.html`.
+- Examples are available in subdirectories of `example/`.
 
 
 ## TODO

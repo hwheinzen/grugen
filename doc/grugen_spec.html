@@ -1,0 +1,187 @@
+
+<h2 id="Introduction">Introduction</h2>
+
+<p>
+	This is a reference manual for the Grugen generator.
+</p>
+
+<p>
+	Grugen is a code generator that produces Go code and puts it into a .go file.
+	It generates a function featuring a simple control break logic
+	for the processing of grouped (sorted) input data.
+	It integrates code snippets provided by the programmer.
+	The generated Go code can be integrated in a Go project.
+	It is possible to integrate the code generation into the project's workflow
+	via 'go generate'.
+</p>
+<p>
+	Programmers then can use a function with the following signature:
+</p>
+
+<pre>
+func conbreak(in *bufio.Reader, out *bufio.Writer) error
+</pre>
+
+<p>
+	Grugen takes a specification file &mdash; we will call it Grugen file &mdash;
+	as its input. 
+</p>
+<p>
+	The Grugen file consists of instructions to the generator
+	and Go code snippets provided by the programmer.
+	Its grammar is compact and regular.
+</p>
+
+<h2>Notation</h2>
+<p>
+The syntax is specified using Extended Backus-Naur Form (EBNF):
+</p>
+
+<pre class="grammar">
+Production  = production_name "=" [ Expression ] "." .
+Expression  = Alternative { "|" Alternative } .
+Alternative = Term { Term } .
+Term        = production_name | token | Group | Option | Repetition .
+Group       = "(" Expression ")" .
+Option      = "[" Expression "]" .
+Repetition  = "{" Expression "}" .
+</pre>
+
+<p>
+Productions are expressions constructed from terms and the following
+operators, in increasing precedence:
+</p>
+
+<pre class="grammar">
+|   alternation
+()  grouping
+[]  option (0 or 1 times)
+{}  repetition (0 to n times)
+</pre>
+
+<p>
+	Lexical tokens are enclosed in double quotes "".
+</p>
+
+<h2>Grugen file</h2>
+
+<p>
+	The Grugen file controls the Grugen generator. It will be processes line by line.
+</p>
+
+<pre class="grammar">
+grugen_file  = { comment_line } gru_definition { select_location | comment_line | code_line } .
+comment_line = ".*" [ any_comment ]                                                      "\n" .
+code_line    = /* any line that does not start with "." in column 1 */                   "\n" .
+</pre>
+
+<p>
+	Instructions for Grugen start with a "." in column 1.
+	Comment lines will be ignored. Code lines go straight into the generated .go file.
+</p>
+<p>
+	<code>code_line</code> should contain valid Go code.
+</p>
+
+
+<h2>Definition of groups</h2>
+
+<pre class="grammar">
+gru_definition = file_level { group_level | comment_line } record_level .
+file_level     = ".gru-" file_level_name [ "," line_limit ]        "\n" .
+line_limit     = "limit=" [ "'" rune_lit "'" | decimal_digits ] .
+group_level    = ".gru-" group_level_name "," type_name            "\n" .
+record_level   = ".gru-" record_level_name [ "," type_name ]       "\n" .
+</pre>
+
+<p>
+	All names, i.e <code>file_level_name</code> etc., must be unique, and valid Go identifiers as specified in "The Go Programming Language Specification"; <code>rune_lit</code> and <code>decimal_digits</code> are also specified there.
+</p>
+<p>
+	File, group, and record level names and type names on group level
+	are being used to generate variables that control the control break logic.
+</p>
+<p>
+	The first .gru statement defines the file level. 
+	<code>file_level_name</code> becomes part of location names. 
+	<code>line_limit</code> tells Grugen what a <i>line</i> is: 
+	a line is either limited by a rune (default is the newline rune '\n')
+	or it is defined by a fixed lenght in number of bytes.
+</p>
+<p>
+	The last .gru statement defines the record level. 
+	<code>record_level_name</code> becomes part of a location name.
+	<code>type_name</code> is used to generate a variable which is meant
+	to hold data on record level.
+</p>
+<p>
+	At least <code>file_level</code> and <code>record_level</code> must be declared.
+</p>
+<p>
+	Arbitrary group levels are possible. 
+	<code>file_level_name</code> becomes part of location names. 
+	<code>type_name</code> is the type of the group key;
+	any type other than a standard type must be declared in the 'global' location.
+</p>
+<p>
+	N.B.: At least two statements starting with ".gru-" are expected:
+	<code>file_level</code> and <code>record_level</code>
+</p>
+
+
+<h2>Selecting locations</h2>
+
+<p>
+	<i>Locations</i> are places in the generated Go code known to Grugen.
+</p>
+
+<pre class="grammar">
+select_location = ".sl=" location_name .
+location_name   = package_statement | import | global |state | get |
+                  "o_" file_level_name | "c_" file_level_name |
+                  "o_" group_level_name | "c_" group_level_name |
+                  "p_" record_level_name .
+</pre>
+
+<p>
+	With <code>select_location</code> a location becomes <i>active</i> and Grugen
+	puts any following <code>code_line</code> into that location until another location will be activated by a new <code>select_location</code>.
+</p>
+<p>
+	Location <code>package_statement</code> has to be used if the generated code
+	is to be incorporated in a package other than </code>main</code>.
+</p>
+<p>
+	Location <code>import</code> has to be used if a package is used
+	which is not yet part of the import statement.
+</p>
+<p>
+	Location <code>global</code> is meant for all necessary
+	Go file scope declarations.
+</p>
+<p>
+	Location <code>state</code> is part of the reading routine 
+	directly after a successful read; the string variable 'line' contains the data. Here it is possible to repeat the read operation with a "goto readagain".
+</p>
+<p>
+	At location <code>get</code> the programmer has to use the content of 
+	the string variable 'line' and fill all the variables named after the 
+	<code>&lt;group_level_name&gt;Key</code> and <code>&lt;record_level_name&gt;Key</code>.
+</p>
+
+
+<h2>The processing locations</h2>
+
+<p>
+	In the following locations you have variables at your disposal that are named
+	<code>group_level_name</code> and <code>record_level_name</code>. 
+	These variables contain the current group keys and the detailed record data.
+</p>
+<p>
+	For the file level and for every group level there is 
+	1) an 'o_' location ('o' for 'open processing') for Go code to be executed at the beginning of file or a group respectively and 
+	2) a 'c_' location ('c' for 'close processing') for Go code to be executed at the end of file or end of a group respectively.
+</p>
+<p>
+	For the record level there is a 'p_' location ('p' for 'processing') for Go code to be executed after each record has been read.
+</p>

@@ -1,0 +1,63 @@
+.* Control break example with 2 group levels 
+.* and input lines delimited by '\n' and fields by ','
+.* ---------------------------------------------------------------------
+.gru-file
+.gru-name, string
+.gru-group, int
+.gru-rec, detailT
+.*
+.sl=global
+type detailT struct {
+	euro int
+}
+.* ---------------------------------------------------------------------
+.sl=o_file
+var (
+	total    int
+	nameSum  int
+	groupSum int
+)
+.sl=c_file
+	out.WriteString("\nTotal: € " + fmt.Sprint(total) + "\n")
+.* ---------------------------------------------------------------------
+.sl=o_name
+	nameSum = 0
+	out.WriteString("\n" + name + "\n")
+.sl=c_name
+	total += nameSum
+	out.WriteString("\tSum for '" + name + "':\t\t€ " + fmt.Sprint(nameSum) + "\n")
+.* ---------------------------------------------------------------------
+.sl=o_group
+	groupSum = 0
+	out.WriteString("\t" + fmt.Sprint(group) + "\n")
+.sl=c_group
+	nameSum += groupSum
+	out.WriteString("\t\tSum for '" + fmt.Sprint(group) + "':\t€ " + fmt.Sprint(groupSum) + "\n")
+.* ---------------------------------------------------------------------
+.sl=p_rec
+	groupSum += rec.euro
+	out.WriteString("\t\t€ " + fmt.Sprint(rec.euro) + "\n")
+.* ---------------------------------------------------------------------
+.sl=get
+	// string 'line' is given
+	parts := strings.Split(line, ",")
+	if len(parts) < 3 {
+		return errors.New("incomplete line:\n" + line)
+	}
+
+	// fill group keys + details
+	nameKey = parts[0]
+	groupKey, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return err
+	}
+	recKey.euro, err = strconv.Atoi(parts[2])
+	if err != nil {
+		return err
+	}
+	
+.sl=import
+	"errors"
+	"strconv"
+	"strings"
+.* ---------------------------------------------------------------------

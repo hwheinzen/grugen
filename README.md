@@ -19,11 +19,9 @@ Typical use of such a generator is editing sorted sequential input data for repo
 
 
 ## Download
-After
+Provided you have Go installed, run:
 
 `$ go get github.com/hwheinzen/grugen`
-  
-the command grugen is at your disposal.
 
 
 ## Usage example

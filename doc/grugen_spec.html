@@ -137,7 +137,7 @@ record_level   = ".gru-" record_level_name [ "," type_name ]       "\n" .
 
 <pre class="grammar">
 select_location = ".sl=" location_name .
-location_name   = package_statement | import | global |state | get |
+location_name   = package | import | global |state | get |
                   "o_" file_level_name | "c_" file_level_name |
                   "o_" group_level_name | "c_" group_level_name |
                   "p_" record_level_name .
@@ -148,7 +148,7 @@ location_name   = package_statement | import | global |state | get |
 	puts any following <code>code_line</code> into that location until another location will be activated by a new <code>select_location</code>.
 </p>
 <p>
-	Location <code>package_statement</code> has to be used if the generated code
+	Location <code>package</code> has to be used if the generated code
 	is to be incorporated in a package other than </code>main</code>.
 </p>
 <p>

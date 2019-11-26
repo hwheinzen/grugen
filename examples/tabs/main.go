@@ -1,4 +1,5 @@
 // Example: tabs
+//go:generate tabs.grugen
 
 package main
 

@@ -1,5 +1,5 @@
 // Example: tabs
-//go:generate tabs.grugen
+//go:generate grugen tabs.grugen
 
 package main
 

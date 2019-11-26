@@ -1,4 +1,5 @@
 // Example: reclen
+//go:generate grugen reclen.grugen
 
 package main
 

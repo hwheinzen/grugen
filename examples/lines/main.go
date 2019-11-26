@@ -1,4 +1,5 @@
 // Example: lines
+//go:generate grugen lines.grugen
 
 package main
 

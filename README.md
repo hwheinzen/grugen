@@ -1,4 +1,4 @@
-# grugen (WORK IN PROGRESS)
+# grugen
 Go code generator for control break logic
 
 
@@ -89,7 +89,7 @@ will consist of customer, `:`, and the total of all the associated bills.
 
 ## More information
 - Specifications for the content of the Grugen file: `doc/grugen_spec.html`.
-- Examples are available in subdirectories of `example/`.
+- Examples are available in subdirectories of `examples/`.
 
 
 ## TODO

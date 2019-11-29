@@ -62,6 +62,8 @@ type gruT struct {
 // If the input data is not properly sorted conbreak stops working and 
 // returns an error value.
 func conbreak(in *bufio.Reader, out *bufio.Writer) error {
+	defer out.Flush()
+
 	var gru gruT
 	{{- range $i, $gru := .Grus }}
 		gru_{{$gru.Name}}s := make({{$gru.Name}}Map, 1000)
@@ -185,7 +187,6 @@ func conbreak(in *bufio.Reader, out *bufio.Writer) error {
 	{{- end}}
 	{{- end}}
 	
-	out.Flush()
 	return nil
 }
 

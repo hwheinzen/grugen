@@ -15,7 +15,7 @@ This pet project owes to my memory of the 4GL Delta/Gru generator my colleges an
 
 
 ## Purpose
-Typical use of such a generator is editing sorted sequential input data for reports and/or aggregating data on any group level.
+Typical use of such a generator is editing sorted sequential input data for reporting and/or aggregating data on any group level.
 
 
 ## Download
@@ -25,7 +25,7 @@ Provided you have Go installed, run:
 
 
 ## Usage example
-Given is the billing data of one year which is sorted by customer.
+Given the billing data of one year which is sorted by customer.
 
 Create a Grugen file (e.g. `custtotal.grugen`) containing `.gru-` statements:
 ```
@@ -55,9 +55,9 @@ and the following locations within a get function:
 - `state`	- here we could ignore an input line with 'goto readagain'
 - `get`		- here we need to extract information out of variable `line` and feed the variables `customerKey` and `billKey`
 
-(The location `global` is meant for global declarations.)
+(The location `global` is for any global declarations needed.)
 
-Now provide code for these locations using `.sl=` statements
+Now provide some code for the locations using `.sl=` statements
 ('sl' for 'select location'):
 ```
 .sl=o_year
@@ -73,9 +73,8 @@ Now provide code for these locations using `.sl=` statements
 	custTotal += bill.sum
 .*
 .sl=get
-	// extract information from input line - available variable: line
-	// ...
-	// supply group keys and detail data
+	// extract information from input line (variable 'line') and ...
+	// ... supply group keys and detail data
 	customerKey = ...
 	billKey.date = ...
 	billKey.sum = ...
@@ -86,10 +85,10 @@ will consist of customer, `:`, and the total of all the associated bills.
 
 
 ## More information
-- Specifications for the content of the Grugen file: `doc/grugen_spec.html`.
-- Examples are available in subdirectories of `examples/`.
+- Specifications for the content of a Grugen file: `doc/grugen_spec.html`.
+- For examples see subdirectories of `examples/`.
 
 
-## TODO
+## TODO (maybe)
 - automated tests for code generation
 - automated tests for the generated code (function `conbreak`)

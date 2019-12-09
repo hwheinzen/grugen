@@ -13,9 +13,9 @@ import (
 )
 
 // V enthält alles, was der template-Mechanismus braucht.
-var v Values
+var v valType
 
-type Values struct {
+type valType struct {
 	Generator string
 	InFile    string
 	OutFile   string
@@ -27,37 +27,37 @@ type Values struct {
 	State   string
 	Get     string
 	//---
-	File   Fil
+	File   filType
 	Delim  string
 	RecLen string
-	Record Rec
-	Grus   []Gru
-	UpGrus []Gru
+	Record recType
+	Grus   []gruType
+	UpGrus []gruType
 	NoGrus bool
 	//---
-	GruLocs []GruLoc
-	Locs    []Loc
+	GruLocs []gruLocType
+	Locs    []locType
 }
-type Fil struct {
+type filType struct {
 	Name string
 	Path string
 }
-type Rec struct {
+type recType struct {
 	Name string
 	Type string
 }
-type Gru struct {
+type gruType struct {
 	Name string // Gruppenname
 	Path string // "Pfad" zur Gruppe
 	Type string
 }
-type GruLoc struct {
+type gruLocType struct {
 	Name string
 	GNam string // Gruppenname
 	Path string // "Pfad" zur Gruppe
 	Code string
 }
-type Loc struct {
+type locType struct {
 	Name string
 	Code string
 }
@@ -76,7 +76,7 @@ func generateGo(inFile string) (outFile string) {
 	defer in.Close()
 	bufin := bufio.NewReader(in)
 
-	values(bufin, inFile) // Versorgen der Values im globalen v.
+	values(bufin, inFile) // Versorgen der values im globalen v.
 
 	//log.Printf("Values: %#v\n", v)
 
@@ -109,7 +109,7 @@ func cat(s, t string) string {
 	return s + t
 }
 
-// Values liest die Grugen-Datei und versorgt v.
+// values liest die Grugen-Datei und versorgt v.
 func values(in *bufio.Reader, inFile string) { //
 	v.Generator = pgmname
 	v.InFile = inFile
@@ -125,7 +125,7 @@ func values(in *bufio.Reader, inFile string) { //
 	var s, t string
 	var ss, tt []string
 	sp := &v.Default // zeigt jeweils auf den String der gerade aktiven Location
-	var grus []Gru
+	var grus []gruType
 
 readloop:
 	for line, eod := nextLine(in); !eod; line, eod = nextLine(in) {
@@ -152,7 +152,7 @@ readloop:
 			case len(ss) == 0: // hier fehlt alles
 				log.Fatalln(".gru statement not complete:", line)
 			case len(grus) == 0: // Dateiebene
-				grus = append(grus, Gru{Name: strings.ToLower(ss[0])})
+				grus = append(grus, gruType{Name: strings.ToLower(ss[0])})
 				if len(ss) > 1 {
 					t = strings.Trim(t, "\n")
 					t = strings.Trim(ss[1], " ")
@@ -176,7 +176,7 @@ readloop:
 				if len(ss) == 1 { // erstes .gru bereits verarbeitet
 					log.Fatalln(".gru statement not complete:", line)
 				}
-				grus = append(grus, Gru{Name: strings.ToLower(ss[0]), Type: ss[1]})
+				grus = append(grus, gruType{Name: strings.ToLower(ss[0]), Type: ss[1]})
 			}
 			continue readloop // nächste Zeile
 		}
@@ -219,15 +219,15 @@ readloop:
 		if len(v.Locs) == 0 { // != len(v.Grus)
 			v.Record.Name = grus[0].Name
 			v.Record.Type = grus[0].Type
-			v.Locs = append(v.Locs, Loc{Name: "p_" + grus[0].Name})
+			v.Locs = append(v.Locs, locType{Name: "p_" + grus[0].Name})
 			erlaubt["p_"+grus[0].Name] = struct{}{}
 
 			last := len(grus) - 1
 			v.File.Name = grus[last].Name
 			v.File.Path = grus[last].Path
-			v.Locs = append(v.Locs, Loc{Name: "o_" + v.File.Name})
+			v.Locs = append(v.Locs, locType{Name: "o_" + v.File.Name})
 			erlaubt["o_"+v.File.Name] = struct{}{}
-			v.Locs = append(v.Locs, Loc{Name: "c_" + v.File.Name})
+			v.Locs = append(v.Locs, locType{Name: "c_" + v.File.Name})
 			erlaubt["c_"+v.File.Name] = struct{}{}
 		}
 
@@ -235,10 +235,10 @@ readloop:
 		if len(v.GruLocs) == 0 { // != len(v.Grus)
 			for i, gru := range grus {
 				if i > 0 && i < len(grus)-1 {
-					v.GruLocs = append(v.GruLocs, GruLoc{
+					v.GruLocs = append(v.GruLocs, gruLocType{
 						Name: "o_" + gru.Name, GNam: gru.Name, Path: gru.Path})
 					erlaubt["o_"+gru.Name] = struct{}{}
-					v.GruLocs = append(v.GruLocs, GruLoc{
+					v.GruLocs = append(v.GruLocs, gruLocType{
 						Name: "c_" + gru.Name, GNam: gru.Name, Path: gru.Path})
 					erlaubt["c_"+gru.Name] = struct{}{}
 				}
@@ -315,8 +315,8 @@ readloop:
 	}
 }
 
-// TurnGrus dreht die Reihenfolge der Elemente eines Gru-Slice.
-func turnGrus(grus []Gru) {
+// TurnGrus dreht die Reihenfolge der Elemente eines gruType-Slice.
+func turnGrus(grus []gruType) {
 	for i, gru := range grus {
 		if i+1 > len(grus)/2 {
 			break

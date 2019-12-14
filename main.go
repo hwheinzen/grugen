@@ -19,14 +19,16 @@ const pgmname = "grugen"
 func main() {
 	in := args()
 
-	out := generateGo(in)
+	out, err := generateGo(in)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	cmd := exec.Command("gofmt", "-w", out)
-
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		log.Println(stderr.String())
 		log.Fatalln(err)

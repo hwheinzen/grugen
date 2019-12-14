@@ -4,6 +4,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -66,24 +67,24 @@ type locType struct {
 // zum Lesen an die Funktion values weiter.
 // Die dort gewonnenen Daten werden auf die Schablone tmpl angewendet,
 // und das Ergebnis in die Ausgabedatei outFile geschrieben.
-func generateGo(inFile string) (outFile string) {
-	var err error
+func generateGo(inFile string) (string, error) {
 
 	in, err := os.Open(inFile) // Eingabedatei
 	if err != nil {
-		log.Fatalln(err)
+		return "", err
 	}
 	defer in.Close()
 	bufin := bufio.NewReader(in)
 
-	values(bufin, inFile) // Versorgen der values im globalen v.
-
+	err = values(bufin, inFile) // Versorgen der values im globalen v.
+	if err != nil {
+		return "", err
+	}
 	//log.Printf("Values: %#v\n", v)
 
-	outFile = v.OutFile
-	out, err := os.Create(outFile) // Ausgabedatei
+	out, err := os.Create(v.OutFile) // Ausgabedatei
 	if err != nil {
-		log.Fatalln(err)
+		return "", err
 	}
 	defer out.Close()
 
@@ -94,14 +95,14 @@ func generateGo(inFile string) (outFile string) {
 	})
 	_, err = t.Parse(tmpl)
 	if err != nil {
-		log.Fatalln(err)
+		return "", err
 	}
 	err = t.Execute(out, v) // Erzeugen des Go-Kodes
 	if err != nil {
-		log.Fatalln(err)
+		return "", err
 	}
 
-	return
+	return v.OutFile, nil
 }
 
 // Cat dient als template-Funktion.
@@ -110,7 +111,7 @@ func cat(s, t string) string {
 }
 
 // values liest die Grugen-Datei und versorgt v.
-func values(in *bufio.Reader, inFile string) { //
+func values(in *bufio.Reader, inFile string) error { //
 	v.Generator = pgmname
 	v.InFile = inFile
 	v.OutFile = "gru_" + strings.TrimSuffix(inFile, ".grugen") + "_generated.go"
@@ -150,7 +151,7 @@ readloop:
 			ss = strings.Split(s, ",")
 			switch {
 			case len(ss) == 0: // hier fehlt alles
-				log.Fatalln(".gru statement not complete:", line)
+				return errors.New(".gru statement not complete: " + line)
 			case len(grus) == 0: // Dateiebene
 				grus = append(grus, gruType{Name: strings.ToLower(ss[0])})
 				if len(ss) > 1 {
@@ -159,22 +160,22 @@ readloop:
 					tt = strings.Split(t, "=")
 					switch {
 					case len(tt) < 2:
-						log.Fatalln("option", t, "not complete")
+						return errors.New("option " + t + " not complete")
 					case tt[0] == "limit" && strings.HasPrefix(tt[1], "'"):
 						v.Delim = tt[1]
 					case tt[0] == "limit":
 						v.RecLen = tt[1]
 						_, err := strconv.Atoi(tt[1])
 						if err != nil {
-							log.Fatalln("argument", tt[1], "of", tt[0], "is neither rune nor number")
+							return errors.New("argument " + tt[1] + " of " + tt[0] +  " is neither rune nor number")
 						}
 					default:
-						log.Fatalln("unknown option:", t)
+						return errors.New("unknown option: " + t)
 					}
 				}
 			default: // Gruppen- oder Satzebene
 				if len(ss) == 1 { // erstes .gru bereits verarbeitet
-					log.Fatalln(".gru statement not complete:", line)
+					return errors.New(".gru statement not complete: " + line)
 				}
 				grus = append(grus, gruType{Name: strings.ToLower(ss[0]), Type: ss[1]})
 			}
@@ -252,12 +253,13 @@ readloop:
 			s = s[4:]
 			s = strings.TrimSuffix(s, "\n")
 			if _, ok := erlaubt[s]; !ok { // unknown location
+//				return errors.New("unknown location: " + s)
 				log.Println("unknown location:", s)
 				sp = &v.Default
 				continue readloop
 			}
 		} else {
-			log.Fatalln("unexpected statement:", s)
+			return errors.New("unexpected statement: " + s)
 		}
 
 		if strings.HasPrefix(s, "package") {
@@ -294,14 +296,11 @@ readloop:
 				continue readloop
 			}
 		}
-		log.Fatalln("unexpected location:", s)
+		return errors.New("unexpected location: " + s)
 	}
 
-	//log.Println("v.Locs:", v.Locs)
-	//log.Println("v.GruLocs:", v.GruLocs)
-
 	if v.Default != "" {
-		log.Fatalln("code without valid location:\n" + v.Default)
+		return errors.New("code without valid location:\n" + v.Default)
 	}
 
 	if v.OutFile == "" {
@@ -313,6 +312,8 @@ readloop:
 	if v.RecLen == "" && v.Delim == "" {
 		v.Delim = `'\n'` // default
 	}
+
+	return nil
 }
 
 // TurnGrus dreht die Reihenfolge der Elemente eines gruType-Slice.

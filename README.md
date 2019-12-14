@@ -86,7 +86,7 @@ will consist of customer, `:`, and the total of all the associated bills.
 
 ## More information
 - Specifications for the content of a Grugen file: `doc/grugen_spec.html`.
-- For examples see subdirectories of `examples/`.
+- There are some examples in subdirectories of `examples/`.
 
 
 ## TODO (maybe)

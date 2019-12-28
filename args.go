@@ -20,7 +20,7 @@ func args() (filename string) {
 
 	if help {
 		usage()
-		os.Exit(0)
+		os.Exit(0) // not an error
 	}
 
 	if len(flag.Args()) != 1 {

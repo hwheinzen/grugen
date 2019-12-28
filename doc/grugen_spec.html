@@ -121,7 +121,7 @@ record_level   = ".gru-" record_level_name [ "," type_name ]       "\n" .
 	Arbitrary group levels are possible. 
 	<code>file_level_name</code> becomes part of location names. 
 	<code>type_name</code> is the type of the group key;
-	any type other than a standard type must be declared in the 'global' location.
+	any type other than a standard type must be declared in the 'global' location; key types must be <i>comparable</i>.
 </p>
 <p>
 	N.B.: At least two statements starting with ".gru-" are expected:

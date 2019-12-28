@@ -13,9 +13,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-{{- if not .NoGrus}}
-	"reflect"
-{{- end}}
 
 // ---------- IMPORT
 {{.Import -}}
@@ -128,7 +125,7 @@ func conbreak(in *bufio.Reader, out *bufio.Writer) error {
 		{{- end}}
 		{{- end}}
 
-		for reflect.DeepEqual(gru.{{$gru.Path}}, gru.old{{$gru.Path}}) {
+		for gru.{{$gru.Path}} == gru.old{{$gru.Path}} {
 
 	{{- end}}
 

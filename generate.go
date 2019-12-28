@@ -34,7 +34,7 @@ type valType struct {
 	Record recType
 	Grus   []gruType
 	UpGrus []gruType
-	NoGrus bool
+	//NoGrus bool
 	//---
 	GruLocs []gruLocType
 	Locs    []locType
@@ -186,7 +186,8 @@ readloop:
 		// grus enthält jetzt: File, alle Gru, Record.
 
 		// Einmal
-		if !v.NoGrus && len(v.Grus) == 0 {
+		if len(v.Grus) == 0 {
+		//if !v.NoGrus && len(v.Grus) == 0 {
 			// Reihenfolge grus umdrehen
 			turnGrus(grus)
 			// .Path erzeugen
@@ -212,9 +213,9 @@ readloop:
 			// Reihenfolge bei .Grus wieder umdrehen
 			turnGrus(v.Grus)
 		}
-		if len(v.Grus) == 0 {
-			v.NoGrus = true
-		}
+		//if len(v.Grus) == 0 {
+		//	v.NoGrus = true
+		//}
 
 		// Einmal
 		if len(v.Locs) == 0 { // != len(v.Grus)

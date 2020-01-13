@@ -25,7 +25,8 @@ Provided you have Go installed, run:
 
 
 ## Usage example
-Given the billing data of one year which is sorted by customer.
+Consider the billing data of one year which shall be sorted by customer.
+You like to get a list of customers with a total of their bills.
 
 Create a Grugen file (e.g. `custtotal.grugen`) containing `.gru-` statements:
 ```
@@ -61,13 +62,19 @@ Now provide some code for the locations using `.sl=` statements
 ('sl' for 'select location'):
 ```
 .sl=o_year
-	var custTotal int
+	var (
+		custTotal int
+		err       error
+	)
 .*
 .sl=o_customer
 	custTotal = 0
 .*
 .sl=c_customer
-	out.WriteString("\n" + customer + ":" + fmt.Sprint(custTotal))
+	_, err = out.WriteString("\n" + customer + ":" + fmt.Sprint(custTotal))
+	if err != nil {
+		return err
+	}
 .*
 .sl=p_bill
 	custTotal += bill.sum

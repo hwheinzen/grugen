@@ -148,25 +148,27 @@ location_name   = package | import | global |state | get |
 	puts any following <code>code_line</code> into that location until another location will be activated by a new <code>select_location</code>.
 </p>
 <p>
-	Location <code>package</code> has to be used if the generated code
+	Location '<code>package</code>' has to be used if the generated code
 	is to be incorporated in a package other than </code>main</code>.
 </p>
 <p>
-	Location <code>import</code> has to be used if a package is used
+	Location '<code>import</code>' has to be used if a package is used
 	which is not yet part of the import statement.
 </p>
 <p>
-	Location <code>global</code> is meant for all necessary
-	Go file scope declarations.
+	Location '<code>global</code>' is meant for all necessary
+	file scope declarations.
 </p>
 <p>
-	Location <code>state</code> is part of the reading routine 
+	Location '<code>state</code>' is part of the reading routine 
 	directly after a successful read; the string variable 'line' contains the data. Here it is possible to repeat the read operation with a "goto readagain".
+	You can return an error if needed.
 </p>
 <p>
-	At location <code>get</code> the programmer has to use the content of 
+	At location '<code>get</code>' the programmer has to use the content of 
 	the string variable 'line' and fill all the variables named after the 
 	<code>&lt;group_level_name&gt;Key</code> and <code>&lt;record_level_name&gt;Key</code>.
+	You can return an error if needed.
 </p>
 
 
@@ -176,6 +178,7 @@ location_name   = package | import | global |state | get |
 	In the following locations you have variables at your disposal that are named
 	<code>group_level_name</code> and <code>record_level_name</code>. 
 	These variables contain the current group keys and the detailed record data.
+	You can return an error if needed.
 </p>
 <p>
 	For the file level and for every group level there is 

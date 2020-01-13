@@ -2,9 +2,9 @@
 .* and input lines delimited by '\n' and fields by ','
 .* ---------------------------------------------------------------------
 .gru-file
-.gru-name, string
+.gru-name,  string
 .gru-group, int
-.gru-rec, detailT
+.gru-rec,   detailT
 .*
 .sl=global
 type detailT struct {
@@ -13,30 +13,49 @@ type detailT struct {
 .* ---------------------------------------------------------------------
 .sl=o_file
 var (
+	err      error
 	total    int
 	nameSum  int
 	groupSum int
 )
 .sl=c_file
-	out.WriteString("\nTotal: € " + fmt.Sprint(total) + "\n")
+	_, err = out.WriteString("\nTotal: € " + fmt.Sprint(total) + "\n")
+	if err != nil {
+		return err
+	}
 .* ---------------------------------------------------------------------
 .sl=o_name
 	nameSum = 0
-	out.WriteString("\n" + name + "\n")
+	_, err = out.WriteString("\n" + name + "\n")
+	if err != nil {
+		return err
+	}
 .sl=c_name
 	total += nameSum
-	out.WriteString("\tSum for '" + name + "':\t\t€ " + fmt.Sprint(nameSum) + "\n")
+	_, err = out.WriteString("\tSum for '" + name + "':\t\t€ " + fmt.Sprint(nameSum) + "\n")
+	if err != nil {
+		return err
+	}
 .* ---------------------------------------------------------------------
 .sl=o_group
 	groupSum = 0
-	out.WriteString("\t" + fmt.Sprint(group) + "\n")
+	_, err = out.WriteString("\t" + fmt.Sprint(group) + "\n")
+	if err != nil {
+		return err
+	}
 .sl=c_group
 	nameSum += groupSum
-	out.WriteString("\t\tSum for '" + fmt.Sprint(group) + "':\t€ " + fmt.Sprint(groupSum) + "\n")
+	_, err = out.WriteString("\t\tSum for '" + fmt.Sprint(group) + "':\t€ " + fmt.Sprint(groupSum) + "\n")
+	if err != nil {
+		return err
+	}
 .* ---------------------------------------------------------------------
 .sl=p_rec
 	groupSum += rec.euro
-	out.WriteString("\t\t€ " + fmt.Sprint(rec.euro) + "\n")
+	_, err = out.WriteString("\t\t€ " + fmt.Sprint(rec.euro) + "\n")
+	if err != nil {
+		return err
+	}
 .* ---------------------------------------------------------------------
 .sl=get
 	// string 'line' is given

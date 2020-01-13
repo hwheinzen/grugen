@@ -10,3 +10,12 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+
+# Generated Go source files (output from grugen)
+*_generated.go
+# Example binaries
+lines
+tabs
+reclen
+# Output from run examples
+list.txt

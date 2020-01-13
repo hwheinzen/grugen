@@ -223,18 +223,14 @@ readAgain:
 		}
 	{{- else}}
 		line, gru_err := in.ReadString({{.Delim}}) // read
-		//log.Println("len(line):", len(line), "\n line:", line, "\n gru_err :", gru_err) // TEST
 		if gru_err != nil && gru_err != io.EOF { // read error
-			//log.Println("gru_err != nil && gru_err != io.EOF // read error") // TEST
 			return gru_err
 		}
 		if gru_err == io.EOF && len(line) == 0 { // EOF + no data
-			//log.Println("gru_err == io.EOF && len(line) == 0 // EOF + no data") // TEST
 			gru.{{.File.Path}}.eod = true
 			return nil
 		}
 		if gru_err == io.EOF && len(line) > 0 { // EOF + data
-			//log.Println("gru_err == io.EOF && len(line) > 0 // EOF + data") // TEST
 			gru.eof = true
 		}
 		if line[len(line)-1] == {{.Delim}} ||

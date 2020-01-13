@@ -1,3 +1,3 @@
-Don't change the data file 'data_reclen' using a text editor.
+Don't change the data file 'data_reclen' with a text editor.
 It might add a newline at the end where none is needed.
 Use a hex editor instead.

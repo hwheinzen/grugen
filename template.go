@@ -252,9 +252,9 @@ readAgain:
 	{{- end}}
 
 	{{range .Grus}}
-		{{.Name}}Key    := gru.{{.Path}}.value
+		{{.Name}}Key       := gru.{{.Path}}.value
 	{{- end}}
-	{{.Record.Name}}Key := gru.{{.Record.Name}}.value
+	{{.Record.Name}}Detail := gru.{{.Record.Name}}.value
 
 
 	//log.Println("keys  vor Get:", nameKey, groupKey, recKey.euro) // TEST
@@ -275,7 +275,7 @@ readAgain:
 	{{range .Grus}}
 		gru.{{.Path}}.value    = {{.Name}}Key
 	{{- end}}
-	gru.{{.Record.Name}}.value    = {{.Record.Name}}Key
+	gru.{{.Record.Name}}.value    = {{.Record.Name}}Detail
 	return nil
 }
 

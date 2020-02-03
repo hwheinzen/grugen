@@ -13,29 +13,24 @@ import (
 	"text/template"
 )
 
-// V enthält alles, was der template-Mechanismus braucht.
-var v valType
-
-type valType struct {
+type valT struct {
 	Generator string
 	InFile    string
 	OutFile   string
-	Default   string
-	//---
+
 	Package string
 	Import  string
 	Global  string
 	State   string
 	Get     string
-	//---
+
 	File   filType
 	Delim  string
 	RecLen string
 	Record recType
 	Grus   []gruType
 	UpGrus []gruType
-	//NoGrus bool
-	//---
+
 	GruLocs []gruLocType
 	Locs    []locType
 }
@@ -63,28 +58,13 @@ type locType struct {
 	Code string
 }
 
-// GenerateGo öffnet die Grugen-Datei mit Namen infile und gibt  sie 
-// zum Lesen an die Funktion values weiter.
-// Die dort gewonnenen Daten werden auf die Schablone tmpl angewendet,
-// und das Ergebnis in die Ausgabedatei outFile geschrieben.
-func generateGo(inFile string) (string, error) {
-
-	in, err := os.Open(inFile) // Eingabedatei
-	if err != nil {
-		return "", err
-	}
-	defer in.Close()
-	bufin := bufio.NewReader(in)
-
-	err = values(bufin, inFile) // Versorgen der values im globalen v.
-	if err != nil {
-		return "", err
-	}
-	//log.Printf("Values: %#v\n", v)
+// Die Daten in v werden auf die Schablone tmpl angewendet,
+// und das Ergebnis in die Ausgabedatei v.OutFile geschrieben.
+func generate(v valT) error {
 
 	out, err := os.Create(v.OutFile) // Ausgabedatei
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer out.Close()
 
@@ -95,14 +75,14 @@ func generateGo(inFile string) (string, error) {
 	})
 	_, err = t.Parse(tmpl)
 	if err != nil {
-		return "", err
+		return err
 	}
 	err = t.Execute(out, v) // Erzeugen des Go-Kodes
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return v.OutFile, nil
+	return nil
 }
 
 // Cat dient als template-Funktion.
@@ -110,11 +90,22 @@ func cat(s, t string) string {
 	return s + t
 }
 
-// values liest die Grugen-Datei und versorgt v.
-func values(in *bufio.Reader, inFile string) error { //
+// Values liest die Grugen-Datei und versorgt v.
+func values(filename string) (valT, error) { //
+
+	// V enthält alles, was der template-Mechanismus später braucht
+	var v valT
+
+	inFile, err := os.Open(filename) // Eingabedatei
+	if err != nil {
+		return v, err
+	}
+	defer inFile.Close()
+	in := bufio.NewReader(inFile)
+
 	v.Generator = pgmname
-	v.InFile = inFile
-	v.OutFile = "gru_" + strings.TrimSuffix(inFile, ".grugen") + "_generated.go"
+	v.InFile = filename
+	v.OutFile = "gru_" + strings.TrimSuffix(filename, ".grugen") + "_generated.go"
 
 	var erlaubt = make(map[string]struct{})
 	erlaubt["package"] = struct{}{}
@@ -125,7 +116,8 @@ func values(in *bufio.Reader, inFile string) error { //
 
 	var s, t string
 	var ss, tt []string
-	sp := &v.Default // zeigt jeweils auf den String der gerade aktiven Location
+	var defLoc string // für Kode ohne gültige Zuweisung
+	sp := &defLoc     // zeigt jeweils auf den String der gerade aktiven location
 	var grus []gruType
 
 readloop:
@@ -151,7 +143,7 @@ readloop:
 			ss = strings.Split(s, ",")
 			switch {
 			case len(ss) == 0: // hier fehlt alles
-				return errors.New(".gru statement not complete: " + line)
+				return v, errors.New(".gru statement not complete: " + line)
 			case len(grus) == 0: // Dateiebene
 				grus = append(grus, gruType{Name: strings.ToLower(ss[0])})
 				if len(ss) > 1 {
@@ -160,22 +152,22 @@ readloop:
 					tt = strings.Split(t, "=")
 					switch {
 					case len(tt) < 2:
-						return errors.New("option " + t + " not complete")
+						return v, errors.New("option " + t + " not complete")
 					case tt[0] == "limit" && strings.HasPrefix(tt[1], "'"):
 						v.Delim = tt[1]
 					case tt[0] == "limit":
 						v.RecLen = tt[1]
 						_, err := strconv.Atoi(tt[1])
 						if err != nil {
-							return errors.New("argument " + tt[1] + " of " + tt[0] +  " is neither rune nor number")
+							return v, errors.New("argument " + tt[1] + " of " + tt[0] +  " is neither rune nor number")
 						}
 					default:
-						return errors.New("unknown option: " + t)
+						return v, errors.New("unknown option: " + t)
 					}
 				}
 			default: // Gruppen- oder Satzebene
 				if len(ss) == 1 { // erstes .gru bereits verarbeitet
-					return errors.New(".gru statement not complete: " + line)
+					return v, errors.New(".gru statement not complete: " + line)
 				}
 				grus = append(grus, gruType{Name: strings.ToLower(ss[0]), Type: ss[1]})
 			}
@@ -185,11 +177,8 @@ readloop:
 		// Hier geht's weiter wenn line weder Kode noch Kommentar noch .gru ist.
 		// grus enthält jetzt: File, alle Gru, Record.
 
-		// Einmal
-		if len(v.Grus) == 0 {
-		//if !v.NoGrus && len(v.Grus) == 0 {
-			// Reihenfolge grus umdrehen
-			turnGrus(grus)
+		if len(v.Grus) == 0 { // nur einmal
+			flip(grus) // Reihenfolge grus umdrehen
 			// .Path erzeugen
 			prevGru := ""
 			for i, gru := range grus {
@@ -210,15 +199,10 @@ readloop:
 				v.Grus = append(v.Grus, gru)
 				v.UpGrus = append(v.UpGrus, gru)
 			}
-			// Reihenfolge bei .Grus wieder umdrehen
-			turnGrus(v.Grus)
+			flip(v.Grus) // Reihenfolge bei .Grus wieder umdrehen
 		}
-		//if len(v.Grus) == 0 {
-		//	v.NoGrus = true
-		//}
 
-		// Einmal
-		if len(v.Locs) == 0 { // != len(v.Grus)
+		if len(v.Locs) == 0 { // nur einmal
 			v.Record.Name = grus[0].Name
 			v.Record.Type = grus[0].Type
 			v.Locs = append(v.Locs, locType{Name: "p_" + grus[0].Name})
@@ -233,8 +217,7 @@ readloop:
 			erlaubt["c_"+v.File.Name] = struct{}{}
 		}
 
-		// Einmal
-		if len(v.GruLocs) == 0 { // != len(v.Grus)
+		if len(v.GruLocs) == 0 { // nur einmal
 			for i, gru := range grus {
 				if i > 0 && i < len(grus)-1 {
 					v.GruLocs = append(v.GruLocs, gruLocType{
@@ -253,16 +236,15 @@ readloop:
 		if strings.HasPrefix(s, ".sl ") || strings.HasPrefix(s, ".sl=") {
 			s = s[4:]
 			s = strings.TrimSuffix(s, "\n")
-			if _, ok := erlaubt[s]; !ok { // unknown location
-//				return errors.New("unknown location: " + s)
+			if _, ok := erlaubt[s]; !ok {
+				//return v, errors.New("unknown location: " + s)
 				log.Println("unknown location:", s)
-				sp = &v.Default
+				sp = &defLoc
 				continue readloop
 			}
 		} else {
-			return errors.New("unexpected statement: " + s)
+			return v, errors.New("unexpected statement: " + s)
 		}
-
 		if strings.HasPrefix(s, "package") {
 			sp = &v.Package
 			continue readloop
@@ -283,30 +265,21 @@ readloop:
 			sp = &v.Get
 			continue readloop
 		}
-
-		// Für die folgenden Kodezeilen vor der nächsten .-Anweisung
-		for i, loc := range v.Locs { // gru locations
-			if s == loc.Name {
-				sp = &v.Locs[i].Code
-				continue readloop
-			}
-		}
 		for i, loc := range v.GruLocs { // gru locations
 			if s == loc.Name {
 				sp = &v.GruLocs[i].Code
 				continue readloop
 			}
 		}
-		return errors.New("unexpected location: " + s)
+		for i, loc := range v.Locs { // file/record locations
+			if s == loc.Name {
+				sp = &v.Locs[i].Code
+				continue readloop
+			}
+		}
+		return v, errors.New("unexpected location: " + s)
 	}
 
-	if v.Default != "" {
-		return errors.New("code without valid location:\n" + v.Default)
-	}
-
-	if v.OutFile == "" {
-		v.OutFile = "DELETE_ME.go" // für alle Fälle
-	}
 	if v.Package == "" {
 		v.Package = "main" // default
 	}
@@ -314,11 +287,15 @@ readloop:
 		v.Delim = `'\n'` // default
 	}
 
-	return nil
+	if defLoc != "" {
+		return v, errors.New("code without valid location:\n" + defLoc)
+	}
+
+	return v, nil
 }
 
-// TurnGrus dreht die Reihenfolge der Elemente eines gruType-Slice.
-func turnGrus(grus []gruType) {
+// Flip dreht die Reihenfolge der Elemente eines gruType-Slice.
+func flip(grus []gruType) {
 	for i, gru := range grus {
 		if i+1 > len(grus)/2 {
 			break

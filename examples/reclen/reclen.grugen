@@ -68,7 +68,7 @@ var (
 		return err
 	}
 	
-	recKey.euro, err = strconv.Atoi(string(line[6:9]))
+	recDetail.euro, err = strconv.Atoi(string(line[6:9]))
 	if err != nil {
 		return err
 	}

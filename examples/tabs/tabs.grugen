@@ -71,7 +71,7 @@ var (
 	if err != nil {
 		return err
 	}
-	recKey.euro, err = strconv.Atoi(parts[2])
+	recDetail.euro, err = strconv.Atoi(parts[2])
 	if err != nil {
 		return err
 	}

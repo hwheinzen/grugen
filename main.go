@@ -19,12 +19,17 @@ const pgmname = "grugen"
 func main() {
 	in := args()
 
-	out, err := generateGo(in)
+	v, err := values(in) // Werte zum Versorgen der Schablone in generate
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	cmd := exec.Command("gofmt", "-w", out)
+	err = generate(v)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	cmd := exec.Command("gofmt", "-w", v.OutFile)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 

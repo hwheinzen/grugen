@@ -15,6 +15,7 @@ import (
 
 type valT struct {
 	Generator string
+
 	InFile    string
 	OutFile   string
 
@@ -58,6 +59,27 @@ type locType struct {
 	Code string
 }
 
+// ReadValues ruft values.
+func readValues(filename string) (v valT, err error) { //
+
+	inFile, err := os.Open(filename) // Eingabedatei
+	if err != nil {
+		return v, err
+	}
+	defer inFile.Close()
+	in := bufio.NewReader(inFile)
+
+	v, err = values(in) // Werte zum Versorgen der Schablone in generate
+	if err != nil {
+		return v, err
+	}
+
+	v.InFile = filename
+	v.OutFile = "gru_" + strings.TrimSuffix(filename, ".grugen") + "_generated.go"
+
+	return v, nil
+}
+
 // Die Daten in v werden auf die Schablone tmpl angewendet,
 // und das Ergebnis in die Ausgabedatei v.OutFile geschrieben.
 func generate(v valT) error {
@@ -91,33 +113,22 @@ func cat(s, t string) string {
 }
 
 // Values liest die Grugen-Datei und versorgt v.
-func values(filename string) (valT, error) { //
+func values(in *bufio.Reader) (valT, error) { //
 
-	// V enthält alles, was der template-Mechanismus später braucht
-	var v valT
+	var v valT // alles, was der template-Mechanismus später braucht
 
-	inFile, err := os.Open(filename) // Eingabedatei
-	if err != nil {
-		return v, err
-	}
-	defer inFile.Close()
-	in := bufio.NewReader(inFile)
-
-	v.Generator = pgmname
-	v.InFile = filename
-	v.OutFile = "gru_" + strings.TrimSuffix(filename, ".grugen") + "_generated.go"
-
-	var erlaubt = make(map[string]struct{})
-	erlaubt["package"] = struct{}{}
-	erlaubt["import"] = struct{}{}
-	erlaubt["global"] = struct{}{}
-	erlaubt["state"] = struct{}{}
-	erlaubt["get"] = struct{}{}
+	var locs = make(map[string]struct{})
+	var valid = struct{}{}
+	locs["package"] = valid
+	locs["import"] = valid
+	locs["global"] = valid
+	locs["state"] = valid
+	locs["get"] = valid
 
 	var s, t string
 	var ss, tt []string
 	var defLoc string // für Kode ohne gültige Zuweisung
-	sp := &defLoc     // zeigt jeweils auf den String der gerade aktiven location
+	locp := &defLoc   // zeigt jeweils auf den String der gerade aktiven location
 	var grus []gruType
 
 readloop:
@@ -130,13 +141,12 @@ readloop:
 
 		// Kode
 		if line[0] != '.' {
-			*sp += line // Zeile an aktive Location anhängen
+			*locp += line // Zeile an aktive Location anhängen
 			continue readloop // nächste Zeile
 		}
 
-		s = strings.ToLower(line)
-
 		// .gru
+		s = strings.ToLower(line)
 		if strings.HasPrefix(s, ".gru-") {
 			s = line[5:] // wg. Groß-Klein-Schreibung wieder Eingabezeile
 			s = strings.TrimSuffix(s, "\n")
@@ -174,106 +184,82 @@ readloop:
 			continue readloop // nächste Zeile
 		}
 
-		// Hier geht's weiter wenn line weder Kode noch Kommentar noch .gru ist.
+		// Hier geht's weiter wenn line weder Kode noch Kommentar noch .gru ist,
+		// d.h. wahrscheinlich .sl= .
 		// grus enthält jetzt: File, alle Gru, Record.
-
 		if len(v.Grus) == 0 { // nur einmal
-			flip(grus) // Reihenfolge grus umdrehen
-			// .Path erzeugen
-			prevGru := ""
-			for i, gru := range grus {
-				if prevGru != "" && i > 0 {
-					grus[i].Path = prevGru + "." + gru.Name
-				}
-				if prevGru == "" {
-					prevGru = gru.Name
-					continue
-				}
-				prevGru = prevGru + "." + gru.Name
-			}
-			// Nur Gruppenebenen -> .Grus .UpGrus
-			for i, gru := range grus {
-				if i == 0 || i == len(grus)-1 {
-					continue
-				}
-				v.Grus = append(v.Grus, gru)
-				v.UpGrus = append(v.UpGrus, gru)
-			}
-			flip(v.Grus) // Reihenfolge bei .Grus wieder umdrehen
+			makePaths(&v, grus)
 		}
-
 		if len(v.Locs) == 0 { // nur einmal
-			v.Record.Name = grus[0].Name
-			v.Record.Type = grus[0].Type
-			v.Locs = append(v.Locs, locType{Name: "p_" + grus[0].Name})
-			erlaubt["p_"+grus[0].Name] = struct{}{}
+			v.File.Name = grus[0].Name
+			v.File.Path = grus[0].Path
+			v.Locs = append(v.Locs, locType{Name: "o_" + v.File.Name})
+			locs["o_"+v.File.Name] = valid
+			v.Locs = append(v.Locs, locType{Name: "c_" + v.File.Name})
+			locs["c_"+v.File.Name] = valid
 
 			last := len(grus) - 1
-			v.File.Name = grus[last].Name
-			v.File.Path = grus[last].Path
-			v.Locs = append(v.Locs, locType{Name: "o_" + v.File.Name})
-			erlaubt["o_"+v.File.Name] = struct{}{}
-			v.Locs = append(v.Locs, locType{Name: "c_" + v.File.Name})
-			erlaubt["c_"+v.File.Name] = struct{}{}
+			v.Record.Name = grus[last].Name
+			v.Record.Type = grus[last].Type
+			v.Locs = append(v.Locs, locType{Name: "p_" + v.Record.Name})
+			locs["p_"+v.Record.Name] = valid
 		}
-
 		if len(v.GruLocs) == 0 { // nur einmal
 			for i, gru := range grus {
 				if i > 0 && i < len(grus)-1 {
 					v.GruLocs = append(v.GruLocs, gruLocType{
 						Name: "o_" + gru.Name, GNam: gru.Name, Path: gru.Path})
-					erlaubt["o_"+gru.Name] = struct{}{}
+					locs["o_"+gru.Name] = valid
 					v.GruLocs = append(v.GruLocs, gruLocType{
 						Name: "c_" + gru.Name, GNam: gru.Name, Path: gru.Path})
-					erlaubt["c_"+gru.Name] = struct{}{}
+					locs["c_"+gru.Name] = valid
 				}
 			}
 		}
 
+		// .sl - select location - Ab hier geht's um die Locations.
 		s = strings.ToLower(line)
-
-		// .sl - select location
 		if strings.HasPrefix(s, ".sl ") || strings.HasPrefix(s, ".sl=") {
 			s = s[4:]
 			s = strings.TrimSuffix(s, "\n")
-			if _, ok := erlaubt[s]; !ok {
+			if _, ok := locs[s]; !ok {
 				//return v, errors.New("unknown location: " + s)
 				log.Println("unknown location:", s)
-				sp = &defLoc
+				locp = &defLoc
 				continue readloop
 			}
 		} else {
 			return v, errors.New("unexpected statement: " + s)
 		}
 		if strings.HasPrefix(s, "package") {
-			sp = &v.Package
+			locp = &v.Package
 			continue readloop
 		}
 		if strings.HasPrefix(s, "import") {
-			sp = &v.Import
+			locp = &v.Import
 			continue readloop
 		}
 		if strings.HasPrefix(s, "global") {
-			sp = &v.Global
+			locp = &v.Global
 			continue readloop
 		}
 		if strings.HasPrefix(s, "state") {
-			sp = &v.State
+			locp = &v.State
 			continue readloop
 		}
 		if strings.HasPrefix(s, "get") {
-			sp = &v.Get
+			locp = &v.Get
 			continue readloop
 		}
 		for i, loc := range v.GruLocs { // gru locations
 			if s == loc.Name {
-				sp = &v.GruLocs[i].Code
+				locp = &v.GruLocs[i].Code
 				continue readloop
 			}
 		}
 		for i, loc := range v.Locs { // file/record locations
 			if s == loc.Name {
-				sp = &v.Locs[i].Code
+				locp = &v.Locs[i].Code
 				continue readloop
 			}
 		}
@@ -288,10 +274,39 @@ readloop:
 	}
 
 	if defLoc != "" {
-		return v, errors.New("code without valid location:\n" + defLoc)
+		return v, errors.New("code without locs location:\n" + defLoc)
 	}
 
 	return v, nil
+}
+
+// MakePaths ergänzt Path in grus und versorgt v.Grus und v.UpGrus.
+func makePaths(v *valT, grus []gruType) {
+	flip(grus) // Reihenfolge grus umdrehen
+
+	prevGru := ""
+	for i, gru := range grus {
+		if prevGru != "" && i > 0 {
+			grus[i].Path = prevGru + "." + gru.Name // Path versorgen
+		}
+
+		if prevGru == "" { // Start
+			prevGru = gru.Name
+			continue
+		}
+		prevGru = prevGru + "." + gru.Name // Name anhängen
+	}
+
+	for i, gru := range grus {
+		if i == 0 || i == len(grus)-1 { // Datei- und Satzebene nicht
+			continue
+		}
+		v.Grus = append(v.Grus, gru)
+		v.UpGrus = append(v.UpGrus, gru)
+	}
+	flip(v.Grus) // Reihenfolge bei .Grus umdrehen
+
+	flip(grus)   // Reihenfolge bei grus wieder zurück
 }
 
 // Flip dreht die Reihenfolge der Elemente eines gruType-Slice.

@@ -19,10 +19,11 @@ const pgmname = "grugen"
 func main() {
 	in := args()
 
-	v, err := values(in) // Werte zum Versorgen der Schablone in generate
+	v, err := readValues(in) // Werte zum Versorgen der Schablone in generate
 	if err != nil {
 		log.Fatalln(err)
 	}
+	v.Generator = pgmname
 
 	err = generate(v)
 	if err != nil {

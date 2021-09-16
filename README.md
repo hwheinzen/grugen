@@ -21,7 +21,9 @@ Typical use of such a generator is editing sorted sequential input data for repo
 ## Download
 Provided you have Go installed, run:
 
-`$ go get github.com/hwheinzen/grugen`
+`$ go install github.com/hwheinzen/grugen@latest`
+
+(Has been `$ go get github.com/hwheinzen/grugen` before.)
 
 
 ## Usage example
